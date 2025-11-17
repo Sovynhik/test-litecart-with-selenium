@@ -1,10 +1,8 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
-import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
@@ -16,24 +14,34 @@ public class TestSeleniumLitecart {
     private WebDriver driver;
     private WebDriverWait wait;
 
+    @BeforeAll
+    static void setupMirrors() {
+        // Зеркала Taobao — обход блокировки Microsoft и GitHub
+        System.setProperty("wdm.edgeDriverMirrorUrl", "https://npm.taobao.org/mirrors/edgedriver/");
+        System.setProperty("wdm.geckoDriverMirrorUrl", "https://npm.taobao.org/mirrors/geckodriver/");
+        System.setProperty("wdm.chromeDriverMirrorUrl", "https://npm.taobao.org/mirrors/chromedriver/");
+    }
+
     @BeforeEach
-    public void setUp() {}
+    void setUp() {}
 
     @AfterEach
-    public void tearDown() {
-        if (driver != null) driver.quit();
+    void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
     }
 
     @Test
-    public void testFirefox() {
+    void testFirefox() {
         WebDriverManager.firefoxdriver().setup();
         driver = new FirefoxDriver();
         runTest();
     }
 
     @Test
-    public void testEdge() {
-        System.setProperty("webdriver.edge.driver", "C:/webdrivers/msedgedriver.exe");
+    void testEdge() {
+        WebDriverManager.edgedriver().setup();
         driver = new EdgeDriver();
         runTest();
     }
@@ -42,20 +50,18 @@ public class TestSeleniumLitecart {
         wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         driver.get(SITE);
 
-        // Ждём загрузки
         wait.until(d -> "complete".equals(
                 ((JavascriptExecutor) d).executeScript("return document.readyState")
         ));
 
-        // Находим элемент
         WebElement purpleDuckLink = wait.until(
                 ExpectedConditions.presenceOfElementLocated(By.partialLinkText("Purple Duck"))
         );
 
-        // клик через JAVASCRIPT
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", purpleDuckLink);
 
-        // Проверка
         wait.until(ExpectedConditions.titleIs("Purple Duck | Rubber Ducks | My Store"));
+
+        System.out.println("Тест прошёл успешно в: " + driver.getClass().getSimpleName());
     }
 }
