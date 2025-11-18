@@ -47,16 +47,30 @@ public class AdminCustomerLifecycleTest {
         }
     }
 
-    private void loginAsAdmin() {
+    @Test
+    @Order(1)
+    @DisplayName("1. Вход в панель администратора")
+    void loginAsAdmin() {
         driver.get(ADMIN_URL);
         driver.findElement(By.xpath("//button[@name='login' or @type='submit']")).click();
+
+
+
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.xpath("//div[contains(@class,'alert-success')]"),
+                "You are now logged in as demo"
+        ));
+
+        assertTrue(
+                driver.findElement(By.xpath("//div[contains(@class,'alert-success')]")).getText().contains("You are now logged in as demo"),
+                "Успешный вход — отображается сообщение 'You are now logged in as demo'"
+        );
     }
 
     @Test
-    @Order(1)
-    @DisplayName("1. Создание нового пользователя через админку")
+    @Order(2)
+    @DisplayName("2. Создание нового пользователя через админку")
     void shouldCreateNewCustomerInAdminPanel() {
-        loginAsAdmin();
         driver.findElement(By.xpath("//a[contains(@href, 'app=customers')]")).click();
         driver.findElement(By.xpath("//a[contains(@href, 'edit_customer')]")).click();
 
@@ -71,10 +85,7 @@ public class AdminCustomerLifecycleTest {
         driver.findElement(By.xpath("//input[@name='city']")).sendKeys(CUSTOMER_CITY);
         driver.findElement(By.xpath("//input[@name='phone']")).sendKeys(CUSTOMER_PHONE);
 
-        WebElement enabled = driver.findElement(By.xpath("//input[@name='status' and @value='1']"));
-        if (!enabled.isSelected()) {
-            enabled.click();
-        }
+        driver.findElement(By.xpath("//label[./input[@name='status' and @value='0']]")).click();
 
         WebElement countrySelect = driver.findElement(By.xpath("//select[@name='country_code']"));
         Select countryDropdown = new Select(countrySelect);
@@ -90,5 +101,21 @@ public class AdminCustomerLifecycleTest {
         wait.until(ExpectedConditions.urlContains("doc=customers"));
         assertTrue(driver.getCurrentUrl().contains("doc=customers"),
                 "После сохранения должен быть редирект в список клиентов (на демо запись отключена)");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("3. Активация учётной записи user")
+    void shouldActivateCustomerAccount() {
+        driver.findElement(By.xpath("//a[contains(@href, 'app=customers')]")).click();
+        driver.findElement(By.xpath("//a[contains(@class,'btn-default') and @title='Edit']")).click();
+
+        WebElement enabled = driver.findElement(By.xpath("//input[@name='status' and @value='1']"));
+        if (!enabled.isSelected()) enabled.click();
+
+        driver.findElement(By.xpath("//button[@name='save']")).click();
+
+        wait.until(ExpectedConditions.urlContains("doc=customers"));
+        assertTrue(driver.getCurrentUrl().contains("doc=customers"));
     }
 }
