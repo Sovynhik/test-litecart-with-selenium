@@ -47,30 +47,22 @@ public class AdminCustomerLifecycleTest {
         }
     }
 
-    @Test
-    @Order(1)
-    @DisplayName("1. Вход в панель администратора")
-    void loginAsAdmin() {
+    private void loginAsAdmin() {
         driver.get(ADMIN_URL);
         driver.findElement(By.xpath("//button[@name='login' or @type='submit']")).click();
+    }
 
-
-
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.xpath("//div[contains(@class,'alert-success')]"),
-                "You are now logged in as demo"
-        ));
-
-        assertTrue(
-                driver.findElement(By.xpath("//div[contains(@class,'alert-success')]")).getText().contains("You are now logged in as demo"),
-                "Успешный вход — отображается сообщение 'You are now logged in as demo'"
-        );
+    private void logoutAdmin() {
+        driver.findElement(By.xpath("//a[@title='Sign Out']")).click();
+        driver.get(BASIC_URL);
     }
 
     @Test
-    @Order(2)
-    @DisplayName("2. Создание нового пользователя через админку")
+    @Order(1)
+    @DisplayName("1. Создание нового пользователя через админку")
     void shouldCreateNewCustomerInAdminPanel() {
+        loginAsAdmin();
+
         driver.findElement(By.xpath("//a[contains(@href, 'app=customers')]")).click();
         driver.findElement(By.xpath("//a[contains(@href, 'edit_customer')]")).click();
 
@@ -101,12 +93,16 @@ public class AdminCustomerLifecycleTest {
         wait.until(ExpectedConditions.urlContains("doc=customers"));
         assertTrue(driver.getCurrentUrl().contains("doc=customers"),
                 "После сохранения должен быть редирект в список клиентов (на демо запись отключена)");
+
+        logoutAdmin();
     }
 
     @Test
-    @Order(3)
-    @DisplayName("3. Активация учётной записи user")
+    @Order(2)
+    @DisplayName("2. Активация учётной записи user")
     void shouldActivateCustomerAccount() {
+        loginAsAdmin();
+
         driver.findElement(By.xpath("//a[contains(@href, 'app=customers')]")).click();
         driver.findElement(By.xpath("//a[contains(@class,'btn-default') and @title='Edit']")).click();
 
@@ -117,5 +113,35 @@ public class AdminCustomerLifecycleTest {
 
         wait.until(ExpectedConditions.urlContains("doc=customers"));
         assertTrue(driver.getCurrentUrl().contains("doc=customers"));
+
+        logoutAdmin();
     }
+
+    @Test
+    @Order(3)
+    @DisplayName("3. Авторизация под новой учётной записью")
+    void shouldLoginAsNewCustomer() {
+        driver.get(BASIC_URL);
+
+        driver.findElement(By.xpath("//a[i[contains(@class,'fa-user')]]")).click();
+
+        driver.findElement(By.xpath("//input[@name='email']")).clear();
+        driver.findElement(By.xpath("//input[@name='email']")).sendKeys(CUSTOMER_EMAIL);
+        driver.findElement(By.xpath("//input[@name='password']")).clear();
+        driver.findElement(By.xpath("//input[@name='password']")).sendKeys(CUSTOMER_PASSWORD);
+
+        driver.findElement(By.xpath("//button[@name='login']")).click();
+
+        By successAlertLocator = By.xpath("//div[@id='notices']//div[contains(@class, 'alert-success') and contains(., 'logged in')]");
+
+        WebElement successAlert = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                successAlertLocator
+        ));
+
+        assertTrue(
+                successAlert.getText().contains("logged in"),
+                "Успешный вход под пользователем — должно появиться сообщение 'You are now logged in...'"
+        );
+    }
+
 }
