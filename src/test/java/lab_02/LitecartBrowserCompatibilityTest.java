@@ -1,3 +1,5 @@
+package lab_02;
+
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
@@ -8,7 +10,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
-public class TestSeleniumLitecart {
+public class LitecartBrowserCompatibilityTest {
 
     private static final String SITE = "https://demo.litecart.net/";
     private WebDriver driver;

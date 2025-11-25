@@ -1,4 +1,4 @@
-//import io.github.bonigarcia.wdm.WebDriverManager;
+package lab_03;//import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
-public class XPathLab3Test {
+public class LitecartXPathHighlighterTest {
 
     private static WebDriver driver;
     private static JavascriptExecutor js;
