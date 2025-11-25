@@ -3,7 +3,7 @@ package lab_02;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
-import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -35,10 +35,10 @@ public class LitecartBrowserCompatibilityTest {
     }
 
     @Test
-    void testEdge() {
-        // скачает с официального Microsoft
-        WebDriverManager.edgedriver().setup();
-        driver = new EdgeDriver();
+    void testChrome() {
+        // скачает с официального Google
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver();
         runTest();
     }
 
