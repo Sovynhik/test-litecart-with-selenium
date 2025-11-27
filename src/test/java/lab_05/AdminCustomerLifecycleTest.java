@@ -2,6 +2,7 @@ package lab_05;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -15,6 +16,7 @@ import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@ExtendWith(TestLifecycleLogger.class)
 public class AdminCustomerLifecycleTest {
     private static WebDriver driver;
     private static WebDriverWait wait;
@@ -24,14 +26,13 @@ public class AdminCustomerLifecycleTest {
 
     private static final String CUSTOMER_FIRST_NAME = "Алексей";
     private static final String CUSTOMER_LAST_NAME = "Петров";
-    private static final String CUSTOMER_EMAIL = "alex_petrov@gmail.com";
+    private static final String CUSTOMER_EMAIL = "alex_petrov_test_" + System.currentTimeMillis() + "@gmail.com";
     private static final String CUSTOMER_PASSWORD = "Passw0rd!";
     private static final String CUSTOMER_ADDRESS_1 = "ул. Строителей, д. 10";
     private static final String CUSTOMER_ADDRESS_2 = "ул. Почтовая, д. 24";
     private static final String CUSTOMER_PHONE = "+79991234567";
     private static final String CUSTOMER_CITY = "Рязань";
     private static final String CUSTOMER_POSTCODE = "101000";
-
 
     @BeforeAll
     static void setUp() {
@@ -49,14 +50,63 @@ public class AdminCustomerLifecycleTest {
         }
     }
 
+    /**
+     * Выполняет авторизацию в административной панели litecart по адресу ADMIN_URL,
+     * используя данные, заданные по умолчанию в демо-версии.
+     */
     private void loginAsAdmin() {
         driver.get(ADMIN_URL);
         driver.findElement(By.xpath("//button[@name='login' or @type='submit']")).click();
     }
 
+    /**
+     * Выполняет выход из административной панели, кликая по ссылке 'Sign Out',
+     * и перенаправляет браузер на базовый URL магазина (BASIC_URL).
+     */
     private void logoutAdmin() {
         driver.findElement(By.xpath("//a[@title='Sign Out']")).click();
         driver.get(BASIC_URL);
+    }
+
+    /**
+     * Заполняет поля Email и Password на форме авторизации клиента.
+     */
+    private void fillLoginFields(String email, String password) {
+        driver.findElement(By.xpath("//input[@name='email']")).clear();
+        driver.findElement(By.xpath("//input[@name='email']")).sendKeys(email);
+        driver.findElement(By.xpath("//input[@name='password']")).clear();
+        driver.findElement(By.xpath("//input[@name='password']")).sendKeys(password);
+    }
+
+    /**
+     * Ожидает и проверяет появление всплывающего уведомления.
+     * @param partialText Часть текста, которую ожидаем увидеть в уведомлении.
+     * @param alertClass Класс уведомления ('alert-success' или 'alert-danger').
+     */
+    private void verifyAlertMessage(String partialText, String alertClass) {
+        By alertLocator = By.xpath(String.format("//div[@id='notices']//div[contains(@class, '%s') and contains(., '%s')]", alertClass, partialText));
+
+        WebElement alert = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                alertLocator
+        ));
+
+        assertTrue(
+                alert.getText().contains(partialText),
+                String.format("Ожидался текст: '%s', Фактический текст: %s", partialText, alert.getText())
+        );
+    }
+
+    /**
+     * Переход на страницу редактирования клиента по Email в админ-панели.
+     */
+    private void goToCustomerEditPage(String email) {
+        driver.findElement(By.xpath("//a[contains(@href, 'app=customers')]")).click();
+
+        By customerLinkLocator = By.xpath(
+                String.format("//a[@class='link' and contains(text(),'%s')]", email)
+        );
+
+        wait.until(ExpectedConditions.elementToBeClickable(customerLinkLocator)).click();
     }
 
     @Test
@@ -94,7 +144,7 @@ public class AdminCustomerLifecycleTest {
 
         wait.until(ExpectedConditions.urlContains("doc=customers"));
         assertTrue(driver.getCurrentUrl().contains("doc=customers"),
-                "После сохранения должен быть редирект в список клиентов (на демо запись отключена)");
+                "После сохранения должен быть редирект в список клиентов.");
 
         logoutAdmin();
     }
@@ -105,11 +155,14 @@ public class AdminCustomerLifecycleTest {
     void shouldActivateCustomerAccount() {
         loginAsAdmin();
 
-        driver.findElement(By.xpath("//a[contains(@href, 'app=customers')]")).click();
-        driver.findElement(By.xpath("//a[contains(@class,'btn-default') and @title='Edit']")).click();
+        goToCustomerEditPage(CUSTOMER_EMAIL);
 
-        WebElement enabled = driver.findElement(By.xpath("//input[@name='status' and @value='1']"));
-        if (!enabled.isSelected()) enabled.click();
+        By enabledLabelLocator = By.xpath("//label[./input[@name='status' and @value='1']]");
+        WebElement enabledInput = driver.findElement(By.xpath("//input[@name='status' and @value='1']"));
+
+        if (!enabledInput.isSelected()) {
+            driver.findElement(enabledLabelLocator).click();
+        }
 
         driver.findElement(By.xpath("//button[@name='save']")).click();
 
@@ -127,23 +180,84 @@ public class AdminCustomerLifecycleTest {
 
         driver.findElement(By.xpath("//a[i[contains(@class,'fa-user')]]")).click();
 
-        driver.findElement(By.xpath("//input[@name='email']")).clear();
-        driver.findElement(By.xpath("//input[@name='email']")).sendKeys(CUSTOMER_EMAIL);
-        driver.findElement(By.xpath("//input[@name='password']")).clear();
-        driver.findElement(By.xpath("//input[@name='password']")).sendKeys(CUSTOMER_PASSWORD);
+        fillLoginFields(CUSTOMER_EMAIL, CUSTOMER_PASSWORD);
 
         driver.findElement(By.xpath("//button[@name='login']")).click();
 
-        By successAlertLocator = By.xpath("//div[@id='notices']//div[contains(@class, 'alert-success') and contains(., 'logged in')]");
-
-        WebElement successAlert = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                successAlertLocator
-        ));
-
-        assertTrue(
-                successAlert.getText().contains("logged in"),
-                "Успешный вход под пользователем — должно появиться сообщение 'You are now logged in...'"
-        );
+        verifyAlertMessage("logged in", "alert-success");
     }
 
+    @Test
+    @Order(4)
+    @DisplayName("4. Выход из новой учётной записи")
+    void shouldLogoutCustomer() {
+        driver.findElement(By.xpath("//a[contains(@class,'nav-link') and i[contains(@class,'fa-user')]]")).click();
+
+        By logoutLinkLocator = By.xpath("//a[contains(@href,'logout') and text()='Logout']");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(logoutLinkLocator)).click();
+
+        verifyAlertMessage("logged out", "alert-success");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("5. Отключение учётной записи user")
+    void shouldDisableCustomerAccount() {
+        loginAsAdmin();
+
+        goToCustomerEditPage(CUSTOMER_EMAIL);
+
+        By disabledLabelLocator = By.xpath("//label[./input[@name='status' and @value='0']]");
+        WebElement disabledInput = driver.findElement(By.xpath("//input[@name='status' and @value='0']"));
+
+        if (!disabledInput.isSelected()) {
+            driver.findElement(disabledLabelLocator).click();
+        }
+
+        driver.findElement(By.xpath("//button[@name='save']")).click();
+
+        wait.until(ExpectedConditions.urlContains("doc=customers"));
+        assertTrue(driver.getCurrentUrl().contains("doc=customers"), "Должен быть редирект в список клиентов.");
+
+        logoutAdmin();
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("6. Проверка невозможности авторизации отключенного user")
+    void shouldFailToLoginWithDisabledAccount() {
+        driver.get(BASIC_URL);
+
+        driver.findElement(By.xpath("//a[i[contains(@class,'fa-user')]]")).click();
+
+        fillLoginFields(CUSTOMER_EMAIL, CUSTOMER_PASSWORD);
+
+        driver.findElement(By.xpath("//button[@name='login']")).click();
+
+        verifyAlertMessage("disabled or not activated", "alert-danger");
+    }
+
+    @Test
+    @Order(7)
+    @DisplayName("7. Удаление учётной записи user")
+    void shouldDeleteCustomerAccount() {
+        loginAsAdmin();
+
+        goToCustomerEditPage(CUSTOMER_EMAIL);
+
+        driver.findElement(By.xpath("//button[@name='delete']")).click();
+
+        wait.until(ExpectedConditions.alertIsPresent()).accept();
+
+        wait.until(ExpectedConditions.urlContains("doc=customers"));
+        assertTrue(driver.getCurrentUrl().contains("doc=customers"), "После удаления должен быть редирект в список клиентов.");
+
+        By customerLinkLocator = By.xpath(String.format("//a[@class='link' and contains(text(), '%s')]", CUSTOMER_EMAIL));
+
+        boolean isCustomerPresent = driver.findElements(customerLinkLocator).isEmpty();
+
+        assertTrue(isCustomerPresent, "Удаленный пользователь не должен присутствовать в списке.");
+
+        logoutAdmin();
+    }
 }
